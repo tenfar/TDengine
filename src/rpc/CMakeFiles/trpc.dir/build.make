@@ -112,12 +112,40 @@ src/rpc/CMakeFiles/trpc.dir/src/tudp.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling C source to assembly CMakeFiles/trpc.dir/src/tudp.c.s"
 	cd /Users/jason/Dev/TaosData/src/rpc && /Library/Developer/CommandLineTools/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /Users/jason/Dev/TaosData/src/rpc/src/tudp.c -o CMakeFiles/trpc.dir/src/tudp.c.s
 
+src/rpc/CMakeFiles/trpc.dir/src/tmsghdr.c.o: src/rpc/CMakeFiles/trpc.dir/flags.make
+src/rpc/CMakeFiles/trpc.dir/src/tmsghdr.c.o: src/rpc/src/tmsghdr.c
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/Users/jason/Dev/TaosData/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building C object src/rpc/CMakeFiles/trpc.dir/src/tmsghdr.c.o"
+	cd /Users/jason/Dev/TaosData/src/rpc && /Library/Developer/CommandLineTools/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -o CMakeFiles/trpc.dir/src/tmsghdr.c.o   -c /Users/jason/Dev/TaosData/src/rpc/src/tmsghdr.c
+
+src/rpc/CMakeFiles/trpc.dir/src/tmsghdr.c.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing C source to CMakeFiles/trpc.dir/src/tmsghdr.c.i"
+	cd /Users/jason/Dev/TaosData/src/rpc && /Library/Developer/CommandLineTools/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /Users/jason/Dev/TaosData/src/rpc/src/tmsghdr.c > CMakeFiles/trpc.dir/src/tmsghdr.c.i
+
+src/rpc/CMakeFiles/trpc.dir/src/tmsghdr.c.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling C source to assembly CMakeFiles/trpc.dir/src/tmsghdr.c.s"
+	cd /Users/jason/Dev/TaosData/src/rpc && /Library/Developer/CommandLineTools/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /Users/jason/Dev/TaosData/src/rpc/src/tmsghdr.c -o CMakeFiles/trpc.dir/src/tmsghdr.c.s
+
+src/rpc/CMakeFiles/trpc.dir/src/ttcpserver.c.o: src/rpc/CMakeFiles/trpc.dir/flags.make
+src/rpc/CMakeFiles/trpc.dir/src/ttcpserver.c.o: src/rpc/src/ttcpserver.c
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/Users/jason/Dev/TaosData/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building C object src/rpc/CMakeFiles/trpc.dir/src/ttcpserver.c.o"
+	cd /Users/jason/Dev/TaosData/src/rpc && /Library/Developer/CommandLineTools/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -o CMakeFiles/trpc.dir/src/ttcpserver.c.o   -c /Users/jason/Dev/TaosData/src/rpc/src/ttcpserver.c
+
+src/rpc/CMakeFiles/trpc.dir/src/ttcpserver.c.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing C source to CMakeFiles/trpc.dir/src/ttcpserver.c.i"
+	cd /Users/jason/Dev/TaosData/src/rpc && /Library/Developer/CommandLineTools/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /Users/jason/Dev/TaosData/src/rpc/src/ttcpserver.c > CMakeFiles/trpc.dir/src/ttcpserver.c.i
+
+src/rpc/CMakeFiles/trpc.dir/src/ttcpserver.c.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling C source to assembly CMakeFiles/trpc.dir/src/ttcpserver.c.s"
+	cd /Users/jason/Dev/TaosData/src/rpc && /Library/Developer/CommandLineTools/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /Users/jason/Dev/TaosData/src/rpc/src/ttcpserver.c -o CMakeFiles/trpc.dir/src/ttcpserver.c.s
+
 # Object files for target trpc
 trpc_OBJECTS = \
 "CMakeFiles/trpc.dir/src/thaship.c.o" \
 "CMakeFiles/trpc.dir/src/trpc.c.o" \
 "CMakeFiles/trpc.dir/src/tstring.c.o" \
-"CMakeFiles/trpc.dir/src/tudp.c.o"
+"CMakeFiles/trpc.dir/src/tudp.c.o" \
+"CMakeFiles/trpc.dir/src/tmsghdr.c.o" \
+"CMakeFiles/trpc.dir/src/ttcpserver.c.o"
 
 # External object files for target trpc
 trpc_EXTERNAL_OBJECTS =
@@ -126,9 +154,11 @@ build/lib/libtrpc.a: src/rpc/CMakeFiles/trpc.dir/src/thaship.c.o
 build/lib/libtrpc.a: src/rpc/CMakeFiles/trpc.dir/src/trpc.c.o
 build/lib/libtrpc.a: src/rpc/CMakeFiles/trpc.dir/src/tstring.c.o
 build/lib/libtrpc.a: src/rpc/CMakeFiles/trpc.dir/src/tudp.c.o
+build/lib/libtrpc.a: src/rpc/CMakeFiles/trpc.dir/src/tmsghdr.c.o
+build/lib/libtrpc.a: src/rpc/CMakeFiles/trpc.dir/src/ttcpserver.c.o
 build/lib/libtrpc.a: src/rpc/CMakeFiles/trpc.dir/build.make
 build/lib/libtrpc.a: src/rpc/CMakeFiles/trpc.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/Users/jason/Dev/TaosData/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Linking C static library ../../build/lib/libtrpc.a"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/Users/jason/Dev/TaosData/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Linking C static library ../../build/lib/libtrpc.a"
 	cd /Users/jason/Dev/TaosData/src/rpc && $(CMAKE_COMMAND) -P CMakeFiles/trpc.dir/cmake_clean_target.cmake
 	cd /Users/jason/Dev/TaosData/src/rpc && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/trpc.dir/link.txt --verbose=$(VERBOSE)
 

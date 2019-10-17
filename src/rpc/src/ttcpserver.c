@@ -22,7 +22,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
+#if defined(DARWIN)
+#include <sys/event.h>
+#else
+#include <sys/epoll.h>
+#endif
 #include "os.h"
 #include "taosmsg.h"
 #include "tlog.h"
@@ -82,7 +86,18 @@ static void taosCleanUpFdObj(SFdObj *pFdObj) {
     return;
   }
 
+
+  #if defined(DARWIN)
+    struct timespec now;
+    now.tv_nsec = 0;
+    now.tv_sec = 0;
+    struct kevent ev[2];
+    int n = 0;
+        EV_SET(&ev[n++], pFdObj->fd, EVFILT_READ, EV_DELETE, 0, 0, pFdObj);    
+#else
+
   epoll_ctl(pThreadObj->pollFd, EPOLL_CTL_DEL, pFdObj->fd, NULL);
+#endif
   close(pFdObj->fd);
 
   pthread_mutex_lock(&pThreadObj->threadMutex);
@@ -162,7 +177,7 @@ static void taosProcessTcpData(void *param) {
   SThreadObj *       pThreadObj;
   int                i, fdNum;
   SFdObj *           pFdObj;
-  struct epoll_event events[maxEvents];
+  // struct epoll_event events[maxEvents];
 
   pThreadObj = (SThreadObj *)param;
 
@@ -172,7 +187,34 @@ static void taosProcessTcpData(void *param) {
       pthread_cond_wait(&pThreadObj->fdReady, &pThreadObj->threadMutex);
     }
     pthread_mutex_unlock(&pThreadObj->threadMutex);
+  #if defined(DARWIN)
 
+    int waitMs = 2;
+    struct timespec timeout;
+    timeout.tv_sec = waitMs / 1000;
+    timeout.tv_nsec = (waitMs % 1000) * 1000 * 1000;
+    struct kevent events[10];
+
+    fdNum = kevent(pThreadObj->pollFd, NULL, 0, events, 10, &timeout);
+
+    if (fdNum <= 0) continue;
+
+    for (int i = 0; i < fdNum; ++i) {
+
+      SFdObj *pFdObj = (SFdObj *) events[i].udata;
+      if (events[i].flags & EV_EOF) {
+        tTrace("%s TCP thread:%d, error happened on FD", pThreadObj->label, pThreadObj->threadId);
+        taosCleanUpFdObj(pFdObj);
+        continue;
+      }
+
+      if (events[i].flags & EV_ERROR) {
+        tTrace("%s TCP thread:%d, FD hang up", pThreadObj->label, pThreadObj->threadId);
+        taosCleanUpFdObj(pFdObj);
+        continue;
+      }
+
+    #else
     fdNum = epoll_wait(pThreadObj->pollFd, events, maxEvents, -1);
     if (fdNum < 0) continue;
 
@@ -191,6 +233,7 @@ static void taosProcessTcpData(void *param) {
         continue;
       }
 
+    #endif
       void *buffer = malloc(1024);
       int   headLen = taosReadMsg(pFdObj->fd, buffer, sizeof(STaosHeader));
       if (headLen != sizeof(STaosHeader)) {
@@ -232,7 +275,7 @@ void taosAcceptTcpConnection(void *arg) {
   SThreadObj *       pThreadObj;
   SServerObj *       pServerObj;
   SFdObj *           pFdObj;
-  struct epoll_event event;
+  // struct epoll_event event;
 
   pServerObj = (SServerObj *)arg;
 
@@ -275,6 +318,18 @@ void taosAcceptTcpConnection(void *arg) {
     pFdObj->port = htons(clientAddr.sin_port);
     pFdObj->pThreadObj = pThreadObj;
 
+#if defined(DARWIN)
+
+    struct timespec now;
+    now.tv_nsec = 0;
+    now.tv_sec = 0;
+    struct kevent ev[2];
+    int n = 0;
+        EV_SET(&ev[n++], pFdObj->fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, pFdObj);  
+    httpTrace("adding channel %lld fd %d events read %d write %d  epoll %d", (long long) pFdObj, pFdObj->fd,  ev[0], ev[1], pThreadObj->pollFd);
+    int r = kevent(pThreadObj->pollFd, ev, n, NULL, 0, &now);
+
+#else
     event.events = EPOLLIN | EPOLLPRI | EPOLLWAKEUP;
     event.data.ptr = pFdObj;
     if (epoll_ctl(pThreadObj->pollFd, EPOLL_CTL_ADD, connFd, &event) < 0) {
@@ -283,7 +338,7 @@ void taosAcceptTcpConnection(void *arg) {
       close(connFd);
       continue;
     }
-
+#endif
     // notify the data process, add into the FdObj list
     pthread_mutex_lock(&(pThreadObj->threadMutex));
 
@@ -314,7 +369,7 @@ void taosAcceptUDConnection(void *arg) {
   SThreadObj *       pThreadObj;
   SServerObj *       pServerObj;
   SFdObj *           pFdObj;
-  struct epoll_event event;
+  // struct epoll_event event;
 
   pServerObj = (SServerObj *)arg;
   sockFd = taosOpenUDServerSocket(pServerObj->ip, pServerObj->port);
@@ -348,6 +403,22 @@ void taosAcceptUDConnection(void *arg) {
     pFdObj->fd = connFd;
     pFdObj->pThreadObj = pThreadObj;
 
+#if defined(DARWIN)
+
+ struct timespec now;
+    now.tv_nsec = 0;
+    now.tv_sec = 0;
+    struct kevent ev[2];
+    int n = 0;
+        EV_SET(&ev[n++], pFdObj->fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, pFdObj);
+        // EV_SET(&ev[n++], pContext->fd, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, pContext);
+  
+    httpTrace("adding channel %lld fd %d events read %d write %d  epoll %d", (long long) pFdObj, pFdObj->fd,  ev[0], ev[1], pThreadObj->pollFd);
+    int r = kevent(pThreadObj->pollFd, ev, n, NULL, 0, &now);
+
+
+
+#else
     event.events = EPOLLIN | EPOLLPRI | EPOLLWAKEUP;
     event.data.ptr = pFdObj;
     if (epoll_ctl(pThreadObj->pollFd, EPOLL_CTL_ADD, connFd, &event) < 0) {
@@ -356,6 +427,9 @@ void taosAcceptUDConnection(void *arg) {
       close(connFd);
       continue;
     }
+
+#endif
+
 
     // notify the data process, add into the FdObj list
     pthread_mutex_lock(&(pThreadObj->threadMutex));
@@ -414,8 +488,12 @@ void *taosInitTcpServer(char *ip, short port, char *label, int numOfThreads, voi
       tError("%s init TCP condition variable failed, reason:%s\n", label, strerror(errno));
       return NULL;
     }
+#if defined(DARWIN)
 
+    pThreadObj->pollFd = kqueue();
+#else
     pThreadObj->pollFd = epoll_create(10);  // size does not matter
+#endif
     if (pThreadObj->pollFd < 0) {
       tError("%s failed to create TCP epoll", label);
       return NULL;

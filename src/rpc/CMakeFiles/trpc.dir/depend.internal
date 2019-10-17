@@ -8,6 +8,8 @@ src/rpc/CMakeFiles/trpc.dir/src/thaship.c.o
  src/inc/tmempool.h
  src/inc/tsdb.h
  src/os/darwin/inc/os.h
+src/rpc/CMakeFiles/trpc.dir/src/tmsghdr.c.o
+ /Users/jason/Dev/TaosData/src/rpc/src/tmsghdr.c
 src/rpc/CMakeFiles/trpc.dir/src/trpc.c.o
  /Users/jason/Dev/TaosData/src/rpc/src/trpc.c
  src/inc/shash.h
@@ -31,6 +33,18 @@ src/rpc/CMakeFiles/trpc.dir/src/trpc.c.o
  src/rpc/inc/tudp.h
 src/rpc/CMakeFiles/trpc.dir/src/tstring.c.o
  /Users/jason/Dev/TaosData/src/rpc/src/tstring.c
+src/rpc/CMakeFiles/trpc.dir/src/ttcpserver.c.o
+ /Users/jason/Dev/TaosData/src/rpc/src/ttcpserver.c
+ src/inc/taosmsg.h
+ src/inc/tcrc32c.h
+ src/inc/tglobalcfg.h
+ src/inc/tlog.h
+ src/inc/tmd5.h
+ src/inc/tsdb.h
+ src/inc/tsocket.h
+ src/inc/tutil.h
+ src/os/darwin/inc/os.h
+ src/rpc/inc/ttcpserver.h
 src/rpc/CMakeFiles/trpc.dir/src/tudp.c.o
  /Users/jason/Dev/TaosData/src/rpc/src/tudp.c
  src/inc/taosmsg.h

@@ -8,6 +8,8 @@ src/rpc/CMakeFiles/trpc.dir/src/thaship.c.o: src/inc/tmempool.h
 src/rpc/CMakeFiles/trpc.dir/src/thaship.c.o: src/inc/tsdb.h
 src/rpc/CMakeFiles/trpc.dir/src/thaship.c.o: src/os/darwin/inc/os.h
 
+src/rpc/CMakeFiles/trpc.dir/src/tmsghdr.c.o: src/rpc/src/tmsghdr.c
+
 src/rpc/CMakeFiles/trpc.dir/src/trpc.c.o: src/rpc/src/trpc.c
 src/rpc/CMakeFiles/trpc.dir/src/trpc.c.o: src/inc/shash.h
 src/rpc/CMakeFiles/trpc.dir/src/trpc.c.o: src/inc/taosmsg.h
@@ -30,6 +32,18 @@ src/rpc/CMakeFiles/trpc.dir/src/trpc.c.o: src/rpc/inc/ttcpserver.h
 src/rpc/CMakeFiles/trpc.dir/src/trpc.c.o: src/rpc/inc/tudp.h
 
 src/rpc/CMakeFiles/trpc.dir/src/tstring.c.o: src/rpc/src/tstring.c
+
+src/rpc/CMakeFiles/trpc.dir/src/ttcpserver.c.o: src/rpc/src/ttcpserver.c
+src/rpc/CMakeFiles/trpc.dir/src/ttcpserver.c.o: src/inc/taosmsg.h
+src/rpc/CMakeFiles/trpc.dir/src/ttcpserver.c.o: src/inc/tcrc32c.h
+src/rpc/CMakeFiles/trpc.dir/src/ttcpserver.c.o: src/inc/tglobalcfg.h
+src/rpc/CMakeFiles/trpc.dir/src/ttcpserver.c.o: src/inc/tlog.h
+src/rpc/CMakeFiles/trpc.dir/src/ttcpserver.c.o: src/inc/tmd5.h
+src/rpc/CMakeFiles/trpc.dir/src/ttcpserver.c.o: src/inc/tsdb.h
+src/rpc/CMakeFiles/trpc.dir/src/ttcpserver.c.o: src/inc/tsocket.h
+src/rpc/CMakeFiles/trpc.dir/src/ttcpserver.c.o: src/inc/tutil.h
+src/rpc/CMakeFiles/trpc.dir/src/ttcpserver.c.o: src/os/darwin/inc/os.h
+src/rpc/CMakeFiles/trpc.dir/src/ttcpserver.c.o: src/rpc/inc/ttcpserver.h
 
 src/rpc/CMakeFiles/trpc.dir/src/tudp.c.o: src/rpc/src/tudp.c
 src/rpc/CMakeFiles/trpc.dir/src/tudp.c.o: src/inc/taosmsg.h

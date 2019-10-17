@@ -33,9 +33,9 @@
 #include "tutil.h"
 
 char configDir[TSDB_FILENAME_LEN] = "~/TDengine/cfg";
-char tsDirectory[TSDB_FILENAME_LEN] = "~/TDengine/data";
-char dataDir[TSDB_FILENAME_LEN] = "~/TDengine/data";
-char logDir[TSDB_FILENAME_LEN] = "~/TDengine/log";
+char tsDirectory[TSDB_FILENAME_LEN] = "/var/lib/taos/data";
+char dataDir[TSDB_FILENAME_LEN] = "/var/lib/taos/data";
+char logDir[TSDB_FILENAME_LEN] = "/var/log";
 char scriptDir[TSDB_FILENAME_LEN] = "~/TDengine/script";
 
 #define PROCESS_ITEM 12
@@ -518,7 +518,7 @@ int taosSetSockOpt(int socketfd, int level, int optname, void *optval, int optle
     return 0;
   }
 
-  return setsockopt(socketfd, level, optname, optval, (socklen_t)optlen);
+return setsockopt(socketfd, level, optname, optval, (socklen_t)optlen);
 }
 
 int taosOpenUDClientSocket(char *ip, short port) {

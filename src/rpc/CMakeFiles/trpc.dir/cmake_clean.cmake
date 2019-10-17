@@ -2,8 +2,10 @@ file(REMOVE_RECURSE
   "../../build/lib/libtrpc.a"
   "../../build/lib/libtrpc.pdb"
   "CMakeFiles/trpc.dir/src/thaship.c.o"
+  "CMakeFiles/trpc.dir/src/tmsghdr.c.o"
   "CMakeFiles/trpc.dir/src/trpc.c.o"
   "CMakeFiles/trpc.dir/src/tstring.c.o"
+  "CMakeFiles/trpc.dir/src/ttcpserver.c.o"
   "CMakeFiles/trpc.dir/src/tudp.c.o"
 )
 

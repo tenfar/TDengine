@@ -177,6 +177,33 @@ src/thaship.c.s:
 	cd /Users/jason/Dev/TaosData && $(MAKE) -f src/rpc/CMakeFiles/trpc.dir/build.make src/rpc/CMakeFiles/trpc.dir/src/thaship.c.s
 .PHONY : src/thaship.c.s
 
+src/tmsghdr.o: src/tmsghdr.c.o
+
+.PHONY : src/tmsghdr.o
+
+# target to build an object file
+src/tmsghdr.c.o:
+	cd /Users/jason/Dev/TaosData && $(MAKE) -f src/rpc/CMakeFiles/trpc.dir/build.make src/rpc/CMakeFiles/trpc.dir/src/tmsghdr.c.o
+.PHONY : src/tmsghdr.c.o
+
+src/tmsghdr.i: src/tmsghdr.c.i
+
+.PHONY : src/tmsghdr.i
+
+# target to preprocess a source file
+src/tmsghdr.c.i:
+	cd /Users/jason/Dev/TaosData && $(MAKE) -f src/rpc/CMakeFiles/trpc.dir/build.make src/rpc/CMakeFiles/trpc.dir/src/tmsghdr.c.i
+.PHONY : src/tmsghdr.c.i
+
+src/tmsghdr.s: src/tmsghdr.c.s
+
+.PHONY : src/tmsghdr.s
+
+# target to generate assembly for a file
+src/tmsghdr.c.s:
+	cd /Users/jason/Dev/TaosData && $(MAKE) -f src/rpc/CMakeFiles/trpc.dir/build.make src/rpc/CMakeFiles/trpc.dir/src/tmsghdr.c.s
+.PHONY : src/tmsghdr.c.s
+
 src/trpc.o: src/trpc.c.o
 
 .PHONY : src/trpc.o
@@ -231,6 +258,33 @@ src/tstring.c.s:
 	cd /Users/jason/Dev/TaosData && $(MAKE) -f src/rpc/CMakeFiles/trpc.dir/build.make src/rpc/CMakeFiles/trpc.dir/src/tstring.c.s
 .PHONY : src/tstring.c.s
 
+src/ttcpserver.o: src/ttcpserver.c.o
+
+.PHONY : src/ttcpserver.o
+
+# target to build an object file
+src/ttcpserver.c.o:
+	cd /Users/jason/Dev/TaosData && $(MAKE) -f src/rpc/CMakeFiles/trpc.dir/build.make src/rpc/CMakeFiles/trpc.dir/src/ttcpserver.c.o
+.PHONY : src/ttcpserver.c.o
+
+src/ttcpserver.i: src/ttcpserver.c.i
+
+.PHONY : src/ttcpserver.i
+
+# target to preprocess a source file
+src/ttcpserver.c.i:
+	cd /Users/jason/Dev/TaosData && $(MAKE) -f src/rpc/CMakeFiles/trpc.dir/build.make src/rpc/CMakeFiles/trpc.dir/src/ttcpserver.c.i
+.PHONY : src/ttcpserver.c.i
+
+src/ttcpserver.s: src/ttcpserver.c.s
+
+.PHONY : src/ttcpserver.s
+
+# target to generate assembly for a file
+src/ttcpserver.c.s:
+	cd /Users/jason/Dev/TaosData && $(MAKE) -f src/rpc/CMakeFiles/trpc.dir/build.make src/rpc/CMakeFiles/trpc.dir/src/ttcpserver.c.s
+.PHONY : src/ttcpserver.c.s
+
 src/tudp.o: src/tudp.c.o
 
 .PHONY : src/tudp.o
@@ -272,12 +326,18 @@ help:
 	@echo "... src/thaship.o"
 	@echo "... src/thaship.i"
 	@echo "... src/thaship.s"
+	@echo "... src/tmsghdr.o"
+	@echo "... src/tmsghdr.i"
+	@echo "... src/tmsghdr.s"
 	@echo "... src/trpc.o"
 	@echo "... src/trpc.i"
 	@echo "... src/trpc.s"
 	@echo "... src/tstring.o"
 	@echo "... src/tstring.i"
 	@echo "... src/tstring.s"
+	@echo "... src/ttcpserver.o"
+	@echo "... src/ttcpserver.i"
+	@echo "... src/ttcpserver.s"
 	@echo "... src/tudp.o"
 	@echo "... src/tudp.i"
 	@echo "... src/tudp.s"

@@ -6,8 +6,8 @@
 
 #IncludeRegexTransform: 
 
-/Users/jason/Dev/TaosData/src/util/src/tdes.c
-stdint.h
+/Users/jason/Dev/TaosData/src/util/src/tsocket.c
+errno.h
 -
 stdio.h
 -
@@ -15,10 +15,26 @@ stdlib.h
 -
 string.h
 -
-time.h
+ctype.h
 -
-tkey.h
-/Users/jason/Dev/TaosData/src/util/src/tkey.h
+fcntl.h
+-
+pthread.h
+-
+stdarg.h
+-
+sys/types.h
+-
+os.h
+/Users/jason/Dev/TaosData/src/util/src/os.h
+tglobalcfg.h
+/Users/jason/Dev/TaosData/src/util/src/tglobalcfg.h
+tlog.h
+/Users/jason/Dev/TaosData/src/util/src/tlog.h
+tsocket.h
+/Users/jason/Dev/TaosData/src/util/src/tsocket.h
+tutil.h
+/Users/jason/Dev/TaosData/src/util/src/tutil.h
 
 src/inc/tcrc32c.h
 stdint.h
@@ -32,18 +48,6 @@ stdint.h
 tsdb.h
 src/inc/tsdb.h
 
-src/inc/tkey.h
-stdbool.h
--
-stdint.h
--
-tlog.h
-src/inc/tlog.h
-tmd5.h
-src/inc/tmd5.h
-tutil.h
-src/inc/tutil.h
-
 src/inc/tlog.h
 stdio.h
 -
@@ -63,6 +67,16 @@ stdint.h
 -
 tglobalcfg.h
 src/inc/tglobalcfg.h
+
+src/inc/tsocket.h
+stdio.h
+-
+stdlib.h
+-
+string.h
+-
+wchar.h
+-
 
 src/inc/tutil.h
 os.h

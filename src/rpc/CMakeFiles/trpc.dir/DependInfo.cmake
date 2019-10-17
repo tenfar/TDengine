@@ -5,8 +5,10 @@ set(CMAKE_DEPENDS_LANGUAGES
 # The set of files for implicit dependencies of each language:
 set(CMAKE_DEPENDS_CHECK_C
   "/Users/jason/Dev/TaosData/src/rpc/src/thaship.c" "/Users/jason/Dev/TaosData/src/rpc/CMakeFiles/trpc.dir/src/thaship.c.o"
+  "/Users/jason/Dev/TaosData/src/rpc/src/tmsghdr.c" "/Users/jason/Dev/TaosData/src/rpc/CMakeFiles/trpc.dir/src/tmsghdr.c.o"
   "/Users/jason/Dev/TaosData/src/rpc/src/trpc.c" "/Users/jason/Dev/TaosData/src/rpc/CMakeFiles/trpc.dir/src/trpc.c.o"
   "/Users/jason/Dev/TaosData/src/rpc/src/tstring.c" "/Users/jason/Dev/TaosData/src/rpc/CMakeFiles/trpc.dir/src/tstring.c.o"
+  "/Users/jason/Dev/TaosData/src/rpc/src/ttcpserver.c" "/Users/jason/Dev/TaosData/src/rpc/CMakeFiles/trpc.dir/src/ttcpserver.c.o"
   "/Users/jason/Dev/TaosData/src/rpc/src/tudp.c" "/Users/jason/Dev/TaosData/src/rpc/CMakeFiles/trpc.dir/src/tudp.c.o"
   )
 set(CMAKE_C_COMPILER_ID "Clang")

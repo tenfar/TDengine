@@ -30,6 +30,15 @@
 #include "tsocket.h"
 #include "tutil.h"
 
+#if !defined(SOL_TCP) && defined(IPPROTO_TCP)
+#define SOL_TCP IPPROTO_TCP
+#endif
+#if !defined(TCP_KEEPIDLE) && defined(TCP_KEEPALIVE)
+#define TCP_KEEPIDLE TCP_KEEPALIVE
+#endif
+
+
+
 unsigned int ip2uint(const char *const ip_addr);
 
 /*
@@ -403,27 +412,42 @@ int taosKeepTcpAlive(int sockFd) {
     close(sockFd);
     return -1;
   }
-
-  int probes = 3;
-  if (taosSetSockOpt(sockFd, SOL_TCP, TCP_KEEPCNT, (void *)&probes, sizeof(probes)) < 0) {
-    pError("fd:%d setsockopt SO_KEEPCNT failed: %d (%s)", sockFd, errno, strerror(errno));
+#if defined(TCP_KEEPCNT)
+int probes = 3;
+  if (taosSetSockOpt(sockFd, IPPROTO_TCP, TCP_KEEPCNT, (void *)&probes, sizeof(probes)) < 0) {
+    pError("fd:%d setsockopt SO_KEEPCNT failed: %d (%s) %d", sockFd, errno, strerror(errno),(sizeof(probes)));
     close(sockFd);
     return -1;
   }
+ #endif
+
+ #if defined(DARWIN)
 
   int alivetime = 10;
+  if (taosSetSockOpt(sockFd, IPPROTO_TCP, TCP_KEEPALIVE, (void *)&alivetime, sizeof(alivetime)) < 0) {
+    pError("fd:%d setsockopt SO_KEEPIDLE failed: %d (%s)", sockFd, errno, strerror(errno));
+    close(sockFd);
+    return -1;
+  }
+  #else
+   int alivetime = 10;
   if (taosSetSockOpt(sockFd, SOL_TCP, TCP_KEEPIDLE, (void *)&alivetime, sizeof(alivetime)) < 0) {
     pError("fd:%d setsockopt SO_KEEPIDLE failed: %d (%s)", sockFd, errno, strerror(errno));
     close(sockFd);
     return -1;
   }
+  #endif
+
+ #if defined(TCP_KEEPINTVL)
 
   int interval = 3;
-  if (taosSetSockOpt(sockFd, SOL_TCP, TCP_KEEPINTVL, (void *)&interval, sizeof(interval)) < 0) {
+  if (taosSetSockOpt(sockFd, IPPROTO_TCP, TCP_KEEPINTVL, (void *)&interval, sizeof(interval)) < 0) {
     pError("fd:%d setsockopt SO_KEEPINTVL failed: %d (%s)", sockFd, errno, strerror(errno));
     close(sockFd);
     return -1;
   }
+  #endif
+ #if defined(TCP_NODELAY)
 
   int nodelay = 1;
   if (taosSetSockOpt(sockFd, IPPROTO_TCP, TCP_NODELAY, (void *)&nodelay, sizeof(nodelay)) < 0) {
@@ -431,6 +455,8 @@ int taosKeepTcpAlive(int sockFd) {
     close(sockFd);
     return -1;
   }
+#endif
+ 
 
   return 0;
 }
