@@ -17,7 +17,7 @@
 
 #include <arpa/inet.h>
 #include <assert.h>
-#include <endian.h>
+// #include <endian.h>
 #include <stdint.h>
 #include "taosmsg.h"
 #include "vnode.h"

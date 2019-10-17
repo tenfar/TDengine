@@ -47,12 +47,29 @@ int vnodeOpenCommitLog(int vnode, uint64_t firstV) {
   }
 
   dTrace("vid:%d, logfd:%d, open file:%s success", vnode, pVnode->logFd, fileName);
+
+  #if defined(DARWIN)
+  /* Slow emulation of posix_fallocate on platforms which don't have it. */
+  char buffer[256];
+  memset (buffer, 0, sizeof buffer);
+
+  size_t remaining = pVnode->mappingSize;
+  while (remaining > 0) {
+    size_t n = remaining > sizeof buffer ? sizeof buffer : remaining;
+    ssize_t r = write (pVnode->logFd, buffer, n);
+    if (r == -1) {
+    perror("fallocate failed");
+      return -1;
+    }
+    remaining -= r;
+  }
+  #else
   if (posix_fallocate64(pVnode->logFd, 0, pVnode->mappingSize) != 0) {
     dError("vid:%d, logfd:%d, failed to alloc file size:%d reason:%s", vnode, pVnode->logFd, pVnode->mappingSize, strerror(errno));
     perror("fallocate failed");
     goto _err_log_open;
   }
-
+#endif
   struct stat statbuf;
   stat(fileName, &statbuf);
   int64_t length = statbuf.st_size;

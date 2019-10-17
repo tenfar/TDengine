@@ -85,7 +85,7 @@ void taosCreateTierDirectory() {
 
 void dnodeCheckDbRunning(const char* dir) {
   char filepath[256] = {0};
-  sprintf(filepath, "%s/.running", dir);
+  sprintf(filepath, "/tmp/taosd.running.lock", dir);
   int fd = open(filepath, O_WRONLY | O_CREAT | O_TRUNC, S_IRWXU | S_IRWXG | S_IRWXO);
   int ret = flock(fd, LOCK_EX | LOCK_NB);
   if (ret != 0) {

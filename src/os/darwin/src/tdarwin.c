@@ -27,7 +27,6 @@
 #include <sys/un.h>
 #include <unistd.h>
 #include <sys/utsname.h>
-
 #include "tglobalcfg.h"
 #include "tlog.h"
 #include "tsdb.h"
@@ -39,11 +38,363 @@ char dataDir[TSDB_FILENAME_LEN] = "~/TDengine/data";
 char logDir[TSDB_FILENAME_LEN] = "~/TDengine/log";
 char scriptDir[TSDB_FILENAME_LEN] = "~/TDengine/script";
 
+#define PROCESS_ITEM 12
+
+typedef struct {
+  uint64_t user;
+  uint64_t nice;
+  uint64_t system;
+  uint64_t idle;
+} SysCpuInfo;
+
+typedef struct {
+  uint64_t utime;   // user time
+  uint64_t stime;   // kernel time
+  uint64_t cutime;  // all user time
+  uint64_t cstime;  // all dead time
+} ProcCpuInfo;
+
+static pid_t tsProcId;
+static char  tsSysNetFile[] = "/proc/net/dev";
+static char  tsSysCpuFile[] = "/proc/stat";
+static char  tsProcCpuFile[25] = {0};
+static char  tsProcMemFile[25] = {0};
+static char  tsProcIOFile[25] = {0};
+static float tsPageSizeKB = 0;
+
 int64_t str2int64(char *str) {
   char *endptr = NULL;
   return strtoll(str, &endptr, 10);
 }
 
+
+bool taosGetCardName(char *ip, char *name) {
+  struct ifaddrs *ifaddr, *ifa;
+  int             family, s;
+  char            host[NI_MAXHOST];
+  bool            ret = false;
+
+  if (getifaddrs(&ifaddr) == -1) {
+    return false;
+  }
+
+  /* Walk through linked list, maintaining head pointer so we can free list
+   * later */
+  for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
+    if (ifa->ifa_addr == NULL) continue;
+
+    family = ifa->ifa_addr->sa_family;
+    if (family != AF_INET) {
+      continue;
+    }
+
+    s = getnameinfo(ifa->ifa_addr, (family == AF_INET) ? sizeof(struct sockaddr_in) : sizeof(struct sockaddr_in6), host,
+                    NI_MAXHOST, NULL, 0, NI_NUMERICHOST);
+    if (s != 0) {
+      break;
+    }
+
+    if (strcmp(host, ip) == 0) {
+      strcpy(name, ifa->ifa_name);
+      ret = true;
+    }
+  }
+
+  freeifaddrs(ifaddr);
+  return ret;
+}
+
+
+bool taosReadProcIO(int64_t *readbyte, int64_t *writebyte) {
+  FILE *fp = fopen(tsProcIOFile, "r");
+  if (fp == NULL) {
+    pError("open file:%s failed", tsProcIOFile);
+    return false;
+  }
+
+  size_t len;
+  char * line = NULL;
+  char   tmp[10];
+  int    readIndex = 0;
+
+  while (!feof(fp)) {
+    tfree(line);
+    getline(&line, &len, fp);
+    if (line == NULL) {
+      break;
+    }
+    if (strstr(line, "rchar:") != NULL) {
+      sscanf(line, "%s %ld", tmp, readbyte);
+      readIndex++;
+    } else if (strstr(line, "wchar:") != NULL) {
+      sscanf(line, "%s %ld", tmp, writebyte);
+      readIndex++;
+    } else {
+    }
+
+    if (readIndex >= 2) break;
+  }
+
+  tfree(line);
+  fclose(fp);
+
+  if (readIndex < 2) {
+    pError("read file:%s failed", tsProcIOFile);
+    return false;
+  }
+
+  return true;
+}
+
+
+ssize_t tsendfile(int dfd, int sfd, off_t *offset, size_t size) {
+  size_t  leftbytes = size;
+  ssize_t sentbytes;
+
+  while (leftbytes > 0) {
+    // TODO : Think to check if file is larger than 1GB
+    if (leftbytes > 1000000000) leftbytes = 1000000000;
+    sentbytes = sendfile(dfd, sfd, offset, leftbytes,NULL,0);
+    if (sentbytes == -1) {
+      if (errno == EINTR) {
+        continue;
+      }
+      else {
+        return -1;
+      }
+    }
+
+    leftbytes -= sentbytes;
+  }
+
+  return size;
+}
+
+bool taosGetProcIO(float *readKB, float *writeKB) {
+  static int64_t lastReadbyte = -1;
+  static int64_t lastWritebyte = -1;
+
+  int64_t curReadbyte, curWritebyte;
+
+  if (!taosReadProcIO(&curReadbyte, &curWritebyte)) {
+    return false;
+  }
+
+  if (lastReadbyte == -1 || lastWritebyte == -1) {
+    lastReadbyte = curReadbyte;
+    lastWritebyte = curWritebyte;
+    return false;
+  }
+
+  *readKB = (float)((double)(curReadbyte - lastReadbyte) / 1024);
+  *writeKB = (float)((double)(curWritebyte - lastWritebyte) / 1024);
+  if (*readKB < 0) *readKB = 0;
+  if (*writeKB < 0) *writeKB = 0;
+
+  lastReadbyte = curReadbyte;
+  lastWritebyte = curWritebyte;
+
+  return true;
+}
+
+bool taosGetSysCpuInfo(SysCpuInfo *cpuInfo) {
+  FILE *fp = fopen(tsSysCpuFile, "r");
+  if (fp == NULL) {
+    pError("open file:%s failed", tsSysCpuFile);
+    return false;
+  }
+
+  size_t len;
+  char * line = NULL;
+  getline(&line, &len, fp);
+  if (line == NULL) {
+    pError("read file:%s failed", tsSysCpuFile);
+    fclose(fp);
+    return false;
+  }
+
+  char cpu[10] = {0};
+  sscanf(line, "%s %ld %ld %ld %ld", cpu, &cpuInfo->user, &cpuInfo->nice, &cpuInfo->system, &cpuInfo->idle);
+
+  tfree(line);
+  fclose(fp);
+  return true;
+}
+
+bool taosGetProcCpuInfo(ProcCpuInfo *cpuInfo) {
+  FILE *fp = fopen(tsProcCpuFile, "r");
+  if (fp == NULL) {
+    pError("open file:%s failed", tsProcCpuFile);
+    return false;
+  }
+
+  size_t len;
+  char * line = NULL;
+  getline(&line, &len, fp);
+  if (line == NULL) {
+    pError("read file:%s failed", tsProcCpuFile);
+    fclose(fp);
+    return false;
+  }
+
+  for (int i = 0, blank = 0; line[i] != 0; ++i) {
+    if (line[i] == ' ') blank++;
+    if (blank == PROCESS_ITEM) {
+      sscanf(line + i + 1, "%ld %ld %ld %ld", &cpuInfo->utime, &cpuInfo->stime, &cpuInfo->cutime, &cpuInfo->cstime);
+      break;
+    }
+  }
+
+  tfree(line);
+  fclose(fp);
+  return true;
+}
+
+bool taosGetCpuUsage(float *sysCpuUsage, float *procCpuUsage) {
+  static uint64_t lastSysUsed = 0;
+  static uint64_t lastSysTotal = 0;
+  static uint64_t lastProcTotal = 0;
+
+  SysCpuInfo  sysCpu;
+  ProcCpuInfo procCpu;
+  if (!taosGetSysCpuInfo(&sysCpu)) {
+    return false;
+  }
+  if (!taosGetProcCpuInfo(&procCpu)) {
+    return false;
+  }
+
+  uint64_t curSysUsed = sysCpu.user + sysCpu.nice + sysCpu.system;
+  uint64_t curSysTotal = curSysUsed + sysCpu.idle;
+  uint64_t curProcTotal = procCpu.utime + procCpu.stime + procCpu.cutime + procCpu.cstime;
+
+  if (lastSysUsed == 0 || lastSysTotal == 0 || lastProcTotal == 0) {
+    lastSysUsed = curSysUsed > 1 ? curSysUsed : 1;
+    lastSysTotal = curSysTotal > 1 ? curSysTotal : 1;
+    lastProcTotal = curProcTotal > 1 ? curProcTotal : 1;
+    return false;
+  }
+
+  if (curSysTotal == lastSysTotal) {
+    return false;
+  }
+
+  *sysCpuUsage = (float)((double)(curSysUsed - lastSysUsed) / (double)(curSysTotal - lastSysTotal) * 100);
+  *procCpuUsage = (float)((double)(curProcTotal - lastProcTotal) / (double)(curSysTotal - lastSysTotal) * 100);
+
+  lastSysUsed = curSysUsed;
+  lastSysTotal = curSysTotal;
+  lastProcTotal = curProcTotal;
+
+  return true;
+}
+
+
+
+bool taosGetCardInfo(int64_t *bytes) {
+  static char tsPublicCard[1000] = {0};
+  if (tsPublicCard[0] == 0) {
+    if (!taosGetCardName(tsInternalIp, tsPublicCard)) {
+      pError("can't get card name from ip:%s", tsInternalIp);
+      return false;
+    }
+    int cardNameLen = (int)strlen(tsPublicCard);
+    for (int i = 0; i < cardNameLen; ++i) {
+      if (tsPublicCard[i] == ':') {
+        tsPublicCard[i] = 0;
+        break;
+      }
+    }
+    // pTrace("card name of public ip:%s is %s", tsPublicIp, tsPublicCard);
+  }
+
+  FILE *fp = fopen(tsSysNetFile, "r");
+  if (fp == NULL) {
+    pError("open file:%s failed", tsSysNetFile);
+    return false;
+  }
+
+  int64_t rbytes, rpackts, tbytes, tpackets;
+  int64_t nouse1, nouse2, nouse3, nouse4, nouse5, nouse6;
+  char    nouse0[200] = {0};
+
+  size_t len;
+  char * line = NULL;
+
+  while (!feof(fp)) {
+    tfree(line);
+    getline(&line, &len, fp);
+    if (line == NULL) {
+      break;
+    }
+    if (strstr(line, tsPublicCard) != NULL) {
+      break;
+    }
+  }
+  if (line != NULL) {
+    sscanf(line, "%s %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld", nouse0, &rbytes, &rpackts, &nouse1, &nouse2, &nouse3,
+           &nouse4, &nouse5, &nouse6, &tbytes, &tpackets);
+    *bytes = rbytes + tbytes;
+    tfree(line);
+    fclose(fp);
+    return true;
+  } else {
+    pWarn("can't get card:%s info from device:%s", tsPublicCard, tsSysNetFile);
+    *bytes = 0;
+    fclose(fp);
+    return false;
+  }
+}
+
+
+bool taosGetBandSpeed(float *bandSpeedKb) {
+  static int64_t lastBytes = 0;
+  static time_t  lastTime = 0;
+  int64_t        curBytes = 0;
+  time_t         curTime = time(NULL);
+
+  if (!taosGetCardInfo(&curBytes)) {
+    return false;
+  }
+
+  if (lastTime == 0 || lastBytes == 0) {
+    lastTime = curTime;
+    lastBytes = curBytes;
+    return false;
+  }
+
+  if (lastTime >= curTime || lastBytes > curBytes) {
+    lastTime = curTime;
+    lastBytes = curBytes;
+    return false;
+  }
+
+  double totalBytes = (double)(curBytes - lastBytes) / 1024 * 8;  // Kb
+  *bandSpeedKb = (float)(totalBytes / (double)(curTime - lastTime));
+
+  // pPrint("bandwidth lastBytes:%ld, lastTime:%ld, curBytes:%ld, curTime:%ld,
+  // speed:%f", lastBytes, lastTime, curBytes, curTime, *bandSpeed);
+
+  lastTime = curTime;
+  lastBytes = curBytes;
+
+  return true;
+}
+
+
+bool taosGetSysMemory(float *memoryUsedMB) {
+  float memoryAvailMB = (float)sysconf(_SC_PAGE_SIZE) * tsPageSizeKB / 1024;
+  *memoryUsedMB = (float)tsTotalMemoryMB - memoryAvailMB;
+  return true;
+}
+
+bool taosGetProcMemory(float *memoryUsedMB) {
+  FILE *fp = fopen(tsProcMemFile, "r");
+  if (fp == NULL) {
+    pError("open file:%s failed", tsProcMemFile);
+    return false;
+  }
+}
 /*
   to make taosMsleep work,
    signal SIGALRM shall be blocked in the calling thread,

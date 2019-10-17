@@ -1,0 +1,42 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/Users/jason/Dev/TaosData/src/kit/taosdemo/taosdemo.c
+argp.h
+-
+assert.h
+-
+error.h
+-
+pthread.h
+-
+semaphore.h
+-
+stdbool.h
+-
+stdio.h
+-
+stdlib.h
+-
+string.h
+-
+sys/time.h
+-
+time.h
+-
+unistd.h
+-
+wordexp.h
+-
+taos.h
+/Users/jason/Dev/TaosData/src/kit/taosdemo/taos.h
+
+src/inc/taos.h
+stdint.h
+-
+

@@ -26,7 +26,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#if defined(DARWIN)
+#include <sys/event.h>
+#else
 #include <sys/epoll.h>
+#endif
 #include <sys/socket.h>
 #include <syslog.h>
 #include <unistd.h>
@@ -104,7 +108,17 @@ void httpCleanUpContext(HttpThread *pThread, HttpContext *pContext) {
   httpCleanUpContextTimer(pContext);
 
   if (pContext->fd >= 0) {
+    #if defined(DARWIN)
+
+    struct timespec now;
+    now.tv_nsec = 0;
+    now.tv_sec = 0;
+    struct kevent ev[2];
+    int n = 0;
+        EV_SET(&ev[n++], pContext->fd, EVFILT_READ, EV_DELETE, 0, 0, pContext);
+    #else
     epoll_ctl(pThread->pollFd, EPOLL_CTL_DEL, pContext->fd, NULL);
+    #endif
     taosCloseSocket(pContext->fd);
     pContext->fd = -1;
   }
@@ -207,7 +221,18 @@ void httpCloseContextByServer(HttpThread *pThread, HttpContext *pContext) {
             pContext, pContext->fd, pContext->ipstr, pContext->usedByEpoll, pContext->usedByApp);
 
   if (pContext->fd >= 0) {
+    #if defined(DARWIN)
+
+    struct timespec now;
+    now.tv_nsec = 0;
+    now.tv_sec = 0;
+    struct kevent ev[2];
+    int n = 0;
+        EV_SET(&ev[n++], pContext->fd, EVFILT_READ, EV_DELETE, 0, 0, pContext);    
+
+    #else
     epoll_ctl(pThread->pollFd, EPOLL_CTL_DEL, pContext->fd, NULL);
+    #endif
     taosCloseSocket(pContext->fd);
     pContext->fd = -1;
   }
@@ -383,6 +408,77 @@ void httpProcessHttpData(void *param) {
     }
     pthread_mutex_unlock(&pThread->threadMutex);
 
+
+#if defined(DARWIN)
+
+    int waitMs = 2;
+    struct timespec timeout;
+    timeout.tv_sec = waitMs / 1000;
+    timeout.tv_nsec = (waitMs % 1000) * 1000 * 1000;
+    struct kevent events[HTTP_MAX_EVENTS];
+
+    fdNum = kevent(pThread->pollFd, NULL, 0, events, HTTP_MAX_EVENTS, &timeout);
+
+    if (fdNum <= 0) continue;
+
+    for (int i = 0; i < fdNum; ++i) {
+      HttpContext *pContext = (HttpContext *) events[i].udata;
+      if (pContext->signature != pContext || pContext->pThread != pThread || pContext->fd <= 0) {
+        continue;
+      }
+
+      if (events[i].flags & EV_EOF) {
+        httpTrace("context:%p, fd:%d, ip:%s, EV_EOF events occured, close connect", pContext, pContext->fd,
+                  pContext->ipstr);
+        httpCloseContextByServer(pThread, pContext);
+        continue;
+      }
+
+      if (events[i].flags & EV_ERROR) {
+        httpTrace("context:%p, fd:%d, ip:%s, EV_ERROR events occured, close connect",
+                  pContext, pContext->fd, pContext->ipstr);
+        httpCloseContextByServer(pThread, pContext);
+        continue;
+      }
+
+      // if (events[i].flags & EPOLLERR) {
+      //   httpTrace("context:%p, fd:%d, ip:%s, EPOLLERR events occured, close connect", pContext, pContext->fd,
+      //             pContext->ipstr);
+      //   httpCloseContextByServer(pThread, pContext);
+      //   continue;
+      // }
+
+      // if (events[i].flags & EPOLLHUP) {
+      //   httpTrace("context:%p, fd:%d, ip:%s, EPOLLHUP events occured, close connect", pContext, pContext->fd,
+      //             pContext->ipstr);
+      //   httpCloseContextByServer(pThread, pContext);
+      //   continue;
+      // }
+
+      if (pContext->usedByApp) {
+        httpTrace("context:%p, fd:%d, ip:%s, still used by app, accessTimes:%d, try again",
+                  pContext, pContext->fd, pContext->ipstr, pContext->accessTimes);
+        continue;
+      }
+
+      if (!httpReadData(pThread, pContext)) {
+        continue;
+      }
+
+      if (!pContext->pThread->pServer->online) {
+        httpTrace("context:%p, fd:%d, ip:%s, server is not online", pContext, pContext->fd, pContext->ipstr);
+        httpSendErrorResp(pContext, HTTP_SERVER_OFFLINE);
+        httpCloseContextByServer(pThread, pContext);
+        continue;
+      }
+
+      __sync_fetch_and_add(&pThread->pServer->requestNum, 1);
+
+      if (!(*(pThread->processData))(pContext)) {
+        httpCloseContextByServer(pThread, pContext);
+      }
+    }
+#else
     struct epoll_event events[HTTP_MAX_EVENTS];
     //-1 means uncertainty, 0-nowait, 1-wait 1 ms, set it from -1 to 1
     fdNum = epoll_wait(pThread->pollFd, events, HTTP_MAX_EVENTS, 1);
@@ -445,6 +541,8 @@ void httpProcessHttpData(void *param) {
         httpCloseContextByServer(pThread, pContext);
       }
     }
+  #endif
+
   }
 }
 
@@ -505,6 +603,23 @@ void httpAcceptHttpConnection(void *arg) {
     sprintf(pContext->ipstr, "%s:%d", inet_ntoa(clientAddr.sin_addr), htons(clientAddr.sin_port));
     pContext->pThread = pThread;
 
+#if defined(DARWIN)
+    
+    struct timespec now;
+    now.tv_nsec = 0;
+    now.tv_sec = 0;
+    struct kevent ev[2];
+    int n = 0;
+        EV_SET(&ev[n++], pContext->fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, pContext);
+        // EV_SET(&ev[n++], pContext->fd, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, pContext);
+  
+    httpTrace("adding channel %lld fd %d events read %d write %d  epoll %d", (long long) pContext, pContext->fd,  ev[0], ev[1], pThread->pollFd);
+    int r = kevent(pThread->pollFd, ev, n, NULL, 0, &now);
+
+
+#else
+
+
     struct epoll_event event;
     event.events = EPOLLIN | EPOLLPRI | EPOLLWAKEUP | EPOLLERR | EPOLLHUP | EPOLLRDHUP;
 
@@ -517,6 +632,8 @@ void httpAcceptHttpConnection(void *arg) {
       tclose(connFd);
       continue;
     }
+
+#endif
 
     // notify the data process, add into the FdObj list
     pthread_mutex_lock(&(pThread->threadMutex));
@@ -573,7 +690,14 @@ bool httpInitConnect(HttpServer *pServer) {
       return false;
     }
 
+    #if defined(DARWIN)
+    
+    pThread->pollFd = kqueue();
+    #else
+
     pThread->pollFd = epoll_create(HTTP_MAX_EVENTS);  // size does not matter
+
+    #endif
     if (pThread->pollFd < 0) {
       httpError("http thread:%s, failed to create HTTP epoll", pThread->label);
       return false;

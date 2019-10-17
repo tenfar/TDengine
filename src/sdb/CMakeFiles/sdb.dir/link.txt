@@ -1,0 +1,2 @@
+/Library/Developer/CommandLineTools/usr/bin/ar qc ../../build/lib/libsdb.a  CMakeFiles/sdb.dir/src/hashint.c.o CMakeFiles/sdb.dir/src/hashstr.c.o CMakeFiles/sdb.dir/src/sdbEngine.c.o CMakeFiles/sdb.dir/src/sdbstr.c.o
+/Library/Developer/CommandLineTools/usr/bin/ranlib ../../build/lib/libsdb.a

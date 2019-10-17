@@ -41,6 +41,12 @@
 #include "vnodeFile.h"
 #include "vnodeQueryImpl.h"
 
+#if  defined(DARWIN)
+  #define MAP_FLAGS (MAP_PRIVATE )
+#else
+  #define MAP_FLAGS (MAP_PRIVATE | MAP_POPULATE)  
+
+#endif
 static int32_t copyDataFromMMapBuffer(int fd, SQInfo *pQInfo, SQueryFileInfo *pQueryFile, char *buf, uint64_t offset,
                                       int32_t size);
 static int32_t readDataFromDiskFile(int fd, SQInfo *pQInfo, SQueryFileInfo *pQueryFile, char *buf, uint64_t offset,
@@ -383,8 +389,8 @@ static UNUSED_FUNC int32_t resetMMapWindow(SQueryFileInfo *pQueryFileInfo) {
   munmap(pQueryFileInfo->pDataFileData, pQueryFileInfo->defaultMappingSize);
 
   pQueryFileInfo->dtFileMappingOffset = 0;
-  pQueryFileInfo->pDataFileData = mmap(NULL, pQueryFileInfo->defaultMappingSize, PROT_READ, MAP_PRIVATE | MAP_POPULATE,
-                                       pQueryFileInfo->dataFd, pQueryFileInfo->dtFileMappingOffset);
+       pQueryFileInfo->pDataFileData = mmap(NULL, pQueryFileInfo->defaultMappingSize, PROT_READ, MAP_FLAGS,
+                                       pQueryFileInfo->dataFd, pQueryFileInfo->dtFileMappingOffset);                              
   if (pQueryFileInfo->pDataFileData == MAP_FAILED) {
     dError("failed to mmaping data file:%s, reason:%s", pQueryFileInfo->dataFilePath, strerror(errno));
     return -1;
@@ -423,8 +429,9 @@ static int32_t moveMMapWindow(SQueryFileInfo *pQueryFileInfo, uint64_t offset) {
 
   /* mmap from the new position */
   pQueryFileInfo->dtFileMappingOffset = upperBnd - pQueryFileInfo->defaultMappingSize + 1;
-  pQueryFileInfo->pDataFileData = mmap(NULL, pQueryFileInfo->defaultMappingSize, PROT_READ, MAP_PRIVATE | MAP_POPULATE,
+  pQueryFileInfo->pDataFileData = mmap(NULL, pQueryFileInfo->defaultMappingSize, PROT_READ, MAP_FLAGS,
                                        pQueryFileInfo->dataFd, pQueryFileInfo->dtFileMappingOffset);
+
   if (pQueryFileInfo->pDataFileData == MAP_FAILED) {
     dError("failed to mmaping data file:%s, handle:%d, offset:%ld, reason:%s", pQueryFileInfo->dataFilePath,
            pQueryFileInfo->dataFd, pQueryFileInfo->dtFileMappingOffset, strerror(errno));
@@ -2508,7 +2515,7 @@ static int file_order_comparator(const void *p1, const void *p2) {
  */
 static int32_t vnodeOpenVnodeDBFiles(SQInfo *pQInfo, SQueryFileInfo *pVnodeFiles, int32_t fid, int32_t vnodeId,
                                      char *fileName, char *prefix) {
-  __off_t size = 0;
+  off_t size = 0;
 
   pVnodeFiles->fileID = fid;
   pVnodeFiles->defaultMappingSize = DEFAULT_DATA_FILE_MMAP_WINDOW_SIZE;
@@ -2587,7 +2594,7 @@ static int32_t vnodeOpenVnodeDBFiles(SQInfo *pQInfo, SQueryFileInfo *pVnodeFiles
 #endif
 
   /* enforce kernel to preload data when the file is mapping */
-  pVnodeFiles->pDataFileData = mmap(NULL, pVnodeFiles->defaultMappingSize, PROT_READ, MAP_PRIVATE | MAP_POPULATE,
+  pVnodeFiles->pDataFileData = mmap(NULL, pVnodeFiles->defaultMappingSize, PROT_READ, MAP_FLAGS,
                                     pVnodeFiles->dataFd, pVnodeFiles->dtFileMappingOffset);
   if (pVnodeFiles->pDataFileData == MAP_FAILED) {
     dError("QInfo:%p failed to map data file:%s, %s", pQInfo, pVnodeFiles->dataFilePath, strerror(errno));

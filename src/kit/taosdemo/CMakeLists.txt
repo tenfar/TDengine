@@ -8,3 +8,4 @@ IF (TD_LINUX)
   ADD_EXECUTABLE(taosdemo ${SRC})
   TARGET_LINK_LIBRARIES(taosdemo taos_static)
 ENDIF ()
+

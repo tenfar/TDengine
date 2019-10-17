@@ -20,6 +20,8 @@
 extern "C" {
 #endif
 
+typedef int(* __compar_fn_t )(const void *, const void *);
+
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
